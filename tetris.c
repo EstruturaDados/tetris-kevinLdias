@@ -5,13 +5,13 @@
 #define TAM_FILA 5
 #define TAM_PILHA 3
 
-// Estrutura que representa uma peca do jogo
+// Estrutura que representa uma peca
 typedef struct {
-    char nome; // tipo da peca ('I', 'O', 'T', 'L')
+    char nome; // tipo ('I', 'O', 'T', 'L')
     int id;    // identificador unico
 } Peca;
 
-// Estrutura da fila circular de pecas futuras
+// Estrutura da fila circular
 typedef struct {
     Peca itens[TAM_FILA];
     int inicio;
@@ -19,13 +19,13 @@ typedef struct {
     int quantidade;
 } Fila;
 
-// Estrutura da pilha de pecas reservadas
+// Estrutura da pilha
 typedef struct {
     Peca itens[TAM_PILHA];
     int topo;
 } Pilha;
 
-// Funcoes da fila
+// ---------- FUNCOES DA FILA ----------
 void inicializarFila(Fila *f) {
     f->inicio = 0;
     f->fim = -1;
@@ -56,7 +56,7 @@ Peca desenfileirar(Fila *f) {
     return p;
 }
 
-// Funcoes da pilha
+// ---------- FUNCOES DA PILHA ----------
 void inicializarPilha(Pilha *p) {
     p->topo = -1;
 }
@@ -89,7 +89,7 @@ Peca desempilhar(Pilha *p) {
     return e;
 }
 
-// Gerar peca aleatoria
+// ---------- FUNCAO DE GERAR PECA ----------
 Peca gerarPeca(int id) {
     Peca nova;
     char tipos[] = {'I', 'O', 'T', 'L'};
@@ -98,9 +98,10 @@ Peca gerarPeca(int id) {
     return nova;
 }
 
-// Exibir estado atual
+// ---------- EXIBIR ESTADO ----------
 void exibirEstado(Fila *f, Pilha *p) {
     printf("\n=== ESTADO ATUAL ===\n");
+
     printf("Fila de pecas: ");
     if (filaVazia(f)) printf("(vazia)");
     else {
@@ -119,9 +120,41 @@ void exibirEstado(Fila *f, Pilha *p) {
             printf("[%c %d] ", p->itens[i].nome, p->itens[i].id);
         }
     }
+
     printf("\n=====================\n");
 }
 
+// ---------- TROCAR PECA UNICA ----------
+void trocarPecaTopoFila(Fila *f, Pilha *p) {
+    if (filaVazia(f) || pilhaVazia(p)) {
+        printf("Nao foi possivel realizar a troca. Estruturas insuficientes.\n");
+        return;
+    }
+    int idxFrente = f->inicio;
+    Peca temp = f->itens[idxFrente];
+    f->itens[idxFrente] = p->itens[p->topo];
+    p->itens[p->topo] = temp;
+    printf("Troca entre a frente da fila e o topo da pilha realizada!\n");
+}
+
+// ---------- TROCA MULTIPLA ----------
+void trocarMultiplas(Fila *f, Pilha *p) {
+    if (f->quantidade < 3 || p->topo < 2) {
+        printf("Nao e possivel realizar a troca multipla. Faltam pecas.\n");
+        return;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        int idxFila = (f->inicio + i) % TAM_FILA;
+        Peca temp = f->itens[idxFila];
+        f->itens[idxFila] = p->itens[p->topo - i];
+        p->itens[p->topo - i] = temp;
+    }
+
+    printf("Troca multipla entre as tres primeiras da fila e as tres da pilha realizada!\n");
+}
+
+// ---------- FUNCAO PRINCIPAL ----------
 int main() {
     Fila fila;
     Pilha pilha;
@@ -139,47 +172,65 @@ int main() {
 
     do {
         exibirEstado(&fila, &pilha);
+
         printf("\nOpcoes:\n");
-        printf("1 - Jogar peca\n");
-        printf("2 - Reservar peca\n");
-        printf("3 - Usar peca reservada\n");
+        printf("1 - Jogar peca da frente da fila\n");
+        printf("2 - Enviar peca da fila para a pilha de reserva\n");
+        printf("3 - Usar peca da pilha de reserva\n");
+        printf("4 - Trocar peca da frente da fila com o topo da pilha\n");
+        printf("5 - Trocar as 3 primeiras da fila com as 3 da pilha\n");
         printf("0 - Sair\n");
         printf("Escolha: ");
         scanf("%d", &opcao);
 
-        if (opcao == 1) {
-            // Jogar peca (remove da fila)
-            if (!filaVazia(&fila)) {
-                Peca jogada = desenfileirar(&fila);
-                printf("Peca jogada: [%c %d]\n", jogada.nome, jogada.id);
-                enfileirar(&fila, gerarPeca(id++));
-            } else {
-                printf("Fila vazia!\n");
+        switch (opcao) {
+            case 1: { // Jogar peca
+                if (!filaVazia(&fila)) {
+                    Peca jogada = desenfileirar(&fila);
+                    printf("Peca jogada: [%c %d]\n", jogada.nome, jogada.id);
+                    enfileirar(&fila, gerarPeca(id++));
+                } else {
+                    printf("Fila vazia!\n");
+                }
+                break;
             }
-        } 
-        else if (opcao == 2) {
-            // Reservar peca (fila -> pilha)
-            if (!filaVazia(&fila) && !pilhaCheia(&pilha)) {
-                Peca reserva = desenfileirar(&fila);
-                empilhar(&pilha, reserva);
-                printf("Peca [%c %d] reservada!\n", reserva.nome, reserva.id);
-                enfileirar(&fila, gerarPeca(id++));
-            } else {
-                printf("Nao foi possivel reservar.\n");
+            case 2: { // Reservar peca
+                if (!filaVazia(&fila) && !pilhaCheia(&pilha)) {
+                    Peca reserva = desenfileirar(&fila);
+                    empilhar(&pilha, reserva);
+                    printf("Peca [%c %d] enviada para a pilha de reserva!\n", reserva.nome, reserva.id);
+                    enfileirar(&fila, gerarPeca(id++));
+                } else {
+                    printf("Nao foi possivel reservar a peca.\n");
+                }
+                break;
             }
-        } 
-        else if (opcao == 3) {
-            // Usar peca reservada (remove da pilha)
-            if (!pilhaVazia(&pilha)) {
-                Peca usada = desempilhar(&pilha);
-                printf("Peca reservada usada: [%c %d]\n", usada.nome, usada.id);
-            } else {
-                printf("Nao ha pecas reservadas.\n");
+            case 3: { // Usar peca reservada
+                if (!pilhaVazia(&pilha)) {
+                    Peca usada = desempilhar(&pilha);
+                    printf("Peca reservada usada: [%c %d]\n", usada.nome, usada.id);
+                } else {
+                    printf("Nao ha pecas reservadas.\n");
+                }
+                break;
             }
+            case 4:
+                trocarPecaTopoFila(&fila, &pilha);
+                break;
+
+            case 5:
+                trocarMultiplas(&fila, &pilha);
+                break;
+
+            case 0:
+                printf("Saindo do programa...\n");
+                break;
+
+            default:
+                printf("Opcao invalida!\n");
         }
 
     } while (opcao != 0);
 
-    printf("Saindo do jogo...\n");
     return 0;
 }
